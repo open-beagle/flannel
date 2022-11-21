@@ -1,0 +1,21 @@
+ARG BASE
+
+FROM ${BASE}
+
+ARG AUTHOR
+ARG VERSION
+
+LABEL maintainer=${AUTHOR} version=${VERSION}
+
+ARG TARGETOS
+ARG TARGETARCH
+
+RUN apk add --no-cache iproute2 net-tools ca-certificates iptables strongswan && update-ca-certificates
+# RUN apk add wireguard-tools --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community
+RUN apk add wireguard-tools --no-cache
+COPY dist/flanneld-${TARGETOS}-${TARGETARCH} /opt/bin/flanneld
+COPY dist/mk-docker-opts.sh /opt/bin/
+COPY dist/iptables-wrapper-installer.sh /
+RUN /iptables-wrapper-installer.sh
+
+ENTRYPOINT ["/opt/bin/flanneld"]
