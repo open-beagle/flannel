@@ -37,7 +37,7 @@ steps:
         from_secret: SOCKS5_PROXY
 
   - name: golang
-    image: registry.cn-qingdao.aliyuncs.com/wod/golang:1.19-alpine
+    image: registry.cn-qingdao.aliyuncs.com/wod/golang:1.19
     environment:
       TAG: v0.19.2
     commands:
