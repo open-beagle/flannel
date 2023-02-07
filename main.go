@@ -45,11 +45,8 @@ import (
 	// Backends need to be imported for their init() to get executed and them to register
 	"github.com/coreos/go-systemd/daemon"
 	"github.com/flannel-io/flannel/backend"
-	_ "github.com/flannel-io/flannel/backend/alivpc"
 	_ "github.com/flannel-io/flannel/backend/alloc"
-	_ "github.com/flannel-io/flannel/backend/awsvpc"
 	_ "github.com/flannel-io/flannel/backend/extension"
-	_ "github.com/flannel-io/flannel/backend/gce"
 	_ "github.com/flannel-io/flannel/backend/hostgw"
 	_ "github.com/flannel-io/flannel/backend/ipip"
 	_ "github.com/flannel-io/flannel/backend/ipsec"
@@ -189,7 +186,7 @@ func newSubnetManager(ctx context.Context) (subnet.Manager, error) {
 	prevSubnet := ReadCIDRFromSubnetFile(opts.subnetFile, "FLANNEL_SUBNET")
 	prevIPv6Subnet := ReadIP6CIDRFromSubnetFile(opts.subnetFile, "FLANNEL_IPV6_SUBNET")
 
-	return etcd.NewLocalManager(ctx, cfg, prevSubnet, prevIPv6Subnet)
+	return etcd.NewLocalManager(ctx, cfg, prevSubnet, prevIPv6Subnet, opts.subnetLeaseRenewMargin)
 }
 
 func main() {
@@ -336,25 +333,26 @@ func main() {
 	// Set up ipMasq if needed
 	if opts.ipMasq {
 		if config.EnableIPv4 {
-			if err = recycleIPTables(config.Network, bn.Lease()); err != nil {
+			if err = recycleIPTables(subnet.GetFlannelNetwork(config), bn.Lease()); err != nil {
 				log.Errorf("Failed to recycle IPTables rules, %v", err)
 				cancel()
 				wg.Wait()
 				os.Exit(1)
 			}
 			log.Infof("Setting up masking rules")
-			go network.SetupAndEnsureIP4Tables(network.MasqRules(config.Network, bn.Lease()), opts.iptablesResyncSeconds)
-
+			network.CreateIP4Chain("nat", "FLANNEL-POSTRTG")
+                        go network.SetupAndEnsureIP4Tables(network.MasqRules(subnet.GetFlannelNetwork(config), bn.Lease()), opts.iptablesResyncSeconds)
 		}
 		if config.EnableIPv6 {
-			if err = recycleIP6Tables(config.IPv6Network, bn.Lease()); err != nil {
+			if err = recycleIP6Tables(subnet.GetFlannelIPv6Network(config), bn.Lease()); err != nil {
 				log.Errorf("Failed to recycle IP6Tables rules, %v", err)
 				cancel()
 				wg.Wait()
 				os.Exit(1)
 			}
 			log.Infof("Setting up masking ip6 rules")
-			go network.SetupAndEnsureIP6Tables(network.MasqIP6Rules(config.IPv6Network, bn.Lease()), opts.iptablesResyncSeconds)
+			network.CreateIP6Chain("nat", "FLANNEL-POSTRTG")
+			go network.SetupAndEnsureIP6Tables(network.MasqIP6Rules(subnet.GetFlannelIPv6Network(config), bn.Lease()), opts.iptablesResyncSeconds)
 		}
 	}
 
@@ -364,11 +362,13 @@ func main() {
 	if opts.iptablesForwardRules {
 		if config.EnableIPv4 {
 			log.Infof("Changing default FORWARD chain policy to ACCEPT")
-			go network.SetupAndEnsureIP4Tables(network.ForwardRules(config.Network.String()), opts.iptablesResyncSeconds)
+			network.CreateIP4Chain("filter", "FLANNEL-FWD")
+			go network.SetupAndEnsureIP4Tables(network.ForwardRules(subnet.GetFlannelNetwork(config).String()), opts.iptablesResyncSeconds)
 		}
 		if config.EnableIPv6 {
 			log.Infof("IPv6: Changing default FORWARD chain policy to ACCEPT")
-			go network.SetupAndEnsureIP6Tables(network.ForwardRules(config.IPv6Network.String()), opts.iptablesResyncSeconds)
+			network.CreateIP6Chain("filter", "FLANNEL-FWD")
+			go network.SetupAndEnsureIP6Tables(network.ForwardRules(subnet.GetFlannelIPv6Network(config).String()), opts.iptablesResyncSeconds)
 		}
 	}
 
@@ -392,10 +392,10 @@ func main() {
 		log.Errorf("Failed to notify systemd the message READY=1 %v", err)
 	}
 
-	// Kube subnet mgr doesn't lease the subnet for this node - it just uses the podCidr that's already assigned.
-	if !opts.kubeSubnetMgr {
-		err = MonitorLease(ctx, sm, bn, &wg)
-		if err == errInterrupted {
+	err = sm.CompleteLease(ctx, bn.Lease(), &wg)
+	if err != nil {
+		log.Errorf("CompleteLease execute error err: %v", err)
+		if strings.EqualFold(err.Error(), errInterrupted.Error()) {
 			// The lease was "revoked" - shut everything down
 			cancel()
 		}
@@ -472,52 +472,6 @@ func getConfig(ctx context.Context, sm subnet.Manager) (*subnet.Config, error) {
 			return nil, errCanceled
 		case <-time.After(1 * time.Second):
 			fmt.Println("timed out")
-		}
-	}
-}
-
-func MonitorLease(ctx context.Context, sm subnet.Manager, bn backend.Network, wg *sync.WaitGroup) error {
-	// Use the subnet manager to start watching leases.
-	evts := make(chan subnet.Event)
-
-	wg.Add(1)
-	go func() {
-		l := bn.Lease()
-		subnet.WatchLease(ctx, sm, l.Subnet, l.IPv6Subnet, evts)
-		wg.Done()
-	}()
-
-	renewMargin := time.Duration(opts.subnetLeaseRenewMargin) * time.Minute
-	dur := time.Until(bn.Lease().Expiration) - renewMargin
-
-	for {
-		select {
-		case <-time.After(dur):
-			err := sm.RenewLease(ctx, bn.Lease())
-			if err != nil {
-				log.Error("Error renewing lease (trying again in 1 min): ", err)
-				dur = time.Minute
-				continue
-			}
-
-			log.Info("Lease renewed, new expiration: ", bn.Lease().Expiration)
-			dur = time.Until(bn.Lease().Expiration) - renewMargin
-
-		case e, ok := <-evts:
-			if !ok {
-				log.Infof("Stopped monitoring lease")
-				return errCanceled
-			}
-			switch e.Type {
-			case subnet.EventAdded:
-				bn.Lease().Expiration = e.Lease.Expiration
-				dur = time.Until(bn.Lease().Expiration) - renewMargin
-				log.Infof("Waiting for %s to renew lease", dur)
-
-			case subnet.EventRemoved:
-				log.Error("Lease has been revoked. Shutting down daemon.")
-				return errInterrupted
-			}
 		}
 	}
 }

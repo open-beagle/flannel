@@ -23,7 +23,7 @@ Flannel is focused on networking. For network policy, other projects such as [Ca
 
 ## Getting started on Kubernetes
 
-The easiest way to deploy flannel with Kubernetes is to use one of several deployment tools and distributions that network clusters with flannel by default. For example, CoreOS's [Tectonic][tectonic] sets up flannel in the Kubernetes clusters it creates using the open source [Tectonic Installer][tectonic-installer] to drive the setup process.
+The easiest way to deploy flannel with Kubernetes is to use one of several deployment tools and distributions that network clusters with flannel by default. For example, [K3s][k3s] sets up flannel in the Kubernetes clusters it creates using the open source [K3s Installer][k3s-installer] to drive the setup process.
 
 Though not required, it's recommended that flannel uses the Kubernetes API as its backing store which avoids the need to deploy a discrete `etcd` cluster for `flannel`. This `flannel` mode is known as the *kube subnet manager*.
 
@@ -32,9 +32,9 @@ Though not required, it's recommended that flannel uses the Kubernetes API as it
 Flannel can be added to any existing Kubernetes cluster though it's simplest to add `flannel` before any pods using the pod network have been started.
 
 For Kubernetes v1.17+
-
-1. Make sure a `flanneld` binary exists at `/opt/bin/flanneld` on each node
-2. `kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml`
+```
+kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+```
 
 If you use custom `podCIDR` (not `10.244.0.0/16`) you first need to download the above manifest and modify the network to match your one.
 
@@ -55,7 +55,9 @@ flannel is also widely used outside of kubernetes. When deployed outside of kube
 
 ## Contact
 
-* Slack: #flannel-users on [Calico Users Slack](https://slack.projectcalico.org)
+* Slack: 
+   * #k3s on [Rancher Users Slack](https://slack.rancher.io)
+   * #flannel-users on [Calico Users Slack](https://slack.projectcalico.org)
 * Planning/Roadmap: [milestones][milestones], [roadmap][roadmap]
 * Bugs: [issues][flannel-issues]
 
@@ -87,6 +89,6 @@ Flannel is under the Apache 2.0 license. See the [LICENSE][license] file for det
 [backends]: Documentation/backends.md
 [roadmap]: https://github.com/kubernetes/kubernetes/milestones
 [reporting]: Documentation/reporting_bugs.md
-[tectonic-installer]: https://github.com/coreos/tectonic-installer
+[k3s-installer]: https://github.com/k3s-io/k3s/#quick-start---install-script
 [installing-with-kubeadm]: https://kubernetes.io/docs/getting-started-guides/kubeadm/
-[tectonic]: https://coreos.com/tectonic/
+[k3s]: https://k3s.io/
