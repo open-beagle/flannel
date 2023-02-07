@@ -7,7 +7,7 @@ git remote add upstream git@github.com:flannel-io/flannel.git
 
 git fetch upstream
 
-git merge v0.19.2
+git merge v0.20.2
 ```
 
 ## build
@@ -24,7 +24,7 @@ rm -rf vendor && go mod vendor
 docker run -it --rm \
 -w /go/src/github.com/flannel-io/flannel \
 -v $PWD/:/go/src/github.com/flannel-io/flannel \
--e TAG=v0.19.2 \
+-e TAG=v0.20.2 \
 registry.cn-qingdao.aliyuncs.com/wod/golang:1.19 \
 bash .beagle/build.sh
 
@@ -43,10 +43,10 @@ dist/flanneld-linux-amd64 --version
 docker build \
   --build-arg BASE=registry.cn-qingdao.aliyuncs.com/wod/alpine:3-arm64 \
   --build-arg AUTHOR=mengkzhaoyun@gmail.com \
-  --build-arg VERSION=v0.19.2 \
+  --build-arg VERSION=v0.20.2 \
   --build-arg TARGETOS=linux \
   --build-arg TARGETARCH=arm64 \
-  --tag registry.cn-qingdao.aliyuncs.com/wod/flannel:v0.19.2-arm64 \
+  --tag registry.cn-qingdao.aliyuncs.com/wod/flannel:v0.20.2-arm64 \
   --file .beagle/dockerfile .
 ```
 

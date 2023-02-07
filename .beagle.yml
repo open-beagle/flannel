@@ -39,7 +39,7 @@ steps:
   - name: golang
     image: registry.cn-qingdao.aliyuncs.com/wod/golang:1.19
     environment:
-      TAG: v0.19.2
+      TAG: v0.20.2
     commands:
       - bash .beagle/build.sh
 
@@ -52,7 +52,7 @@ steps:
       base: registry.cn-qingdao.aliyuncs.com/wod/alpine:3-amd64
       dockerfile: .beagle/dockerfile
       repo: wod/flannel
-      version: 'v0.19.2'
+      version: 'v0.20.2'
       channel: 'amd64'
       args: 'TARGETOS=linux,TARGETARCH=amd64'
       registry: registry.cn-qingdao.aliyuncs.com
@@ -70,7 +70,7 @@ steps:
       base: registry.cn-qingdao.aliyuncs.com/wod/alpine:3-arm64
       dockerfile: .beagle/dockerfile
       repo: wod/flannel
-      version: 'v0.19.2'
+      version: 'v0.20.2'
       channel: 'arm64'
       args: 'TARGETOS=linux,TARGETARCH=arm64'
       registry: registry.cn-qingdao.aliyuncs.com
@@ -88,7 +88,7 @@ steps:
       base: registry.cn-qingdao.aliyuncs.com/wod/alpine:3-ppc64le
       dockerfile: .beagle/dockerfile
       repo: wod/flannel
-      version: 'v0.19.2'
+      version: 'v0.20.2'
       channel: 'ppc64le'
       args: 'TARGETOS=linux,TARGETARCH=ppc64le'
       registry: registry.cn-qingdao.aliyuncs.com
@@ -101,8 +101,8 @@ steps:
     image: registry.cn-qingdao.aliyuncs.com/wod/devops-docker-manifest:1.0
     settings:
       platforms: linux/amd64,linux/arm64,linux/ppc64le
-      template: registry.cn-qingdao.aliyuncs.com/wod/flannel:v0.19.2-ARCH
-      target: registry.cn-qingdao.aliyuncs.com/wod/flannel:v0.19.2
+      template: registry.cn-qingdao.aliyuncs.com/wod/flannel:v0.20.2-ARCH
+      target: registry.cn-qingdao.aliyuncs.com/wod/flannel:v0.20.2
       username:
         from_secret: REGISTRY_USER_ALIYUN
       password:
