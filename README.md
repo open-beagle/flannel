@@ -2,7 +2,7 @@
 
 ![flannel Logo](logos/flannel-horizontal-color.png)
 
-[![Build Status](https://travis-ci.org/coreos/flannel.png?branch=master)](https://travis-ci.org/coreos/flannel)
+![Build Status](https://github.com/flannel-io/flannel/actions/workflows/build.yaml/badge.svg?branch=master)
 
 Flannel is a simple and easy way to configure a layer 3 network fabric designed for Kubernetes.
 
@@ -32,13 +32,29 @@ Though not required, it's recommended that flannel uses the Kubernetes API as it
 Flannel can be added to any existing Kubernetes cluster though it's simplest to add `flannel` before any pods using the pod network have been started.
 
 For Kubernetes v1.17+
+
+#### Deploying Flannel with kubectl
 ```
-kubectl apply -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+kubectl apply -f https://github.com/flannel-io/flannel/releases/latest/download/kube-flannel.yml
 ```
 
 If you use custom `podCIDR` (not `10.244.0.0/16`) you first need to download the above manifest and modify the network to match your one.
 
+#### Deploying Flannel with helm
+```
+helm install flannel --set podCidr="10.244.0.0/16" https://github.com/flannel-io/flannel/releases/latest/download/flannel.tgz
+```
+
 See [Kubernetes](Documentation/kubernetes.md) for more details.
+
+In case a firewall is configured ensure to enable the right port used by the configured [backend][backends].
+
+Flannel uses `portmap` as CNI network plugin by default; when deploying Flannel ensure that the [CNI Network plugins][Network-plugins] are installed in `/opt/cni/bin` the latest binaries can be downloaded with the following commands:
+```
+mkdir -p /opt/cni/bin
+curl -O -L https://github.com/containernetworking/plugins/releases/download/v1.2.0/cni-plugins-linux-amd64-v1.2.0.tgz
+tar -C /opt/cni/bin -xzf cni-plugins-linux-amd64-v1.2.0.tgz
+```
 
 ## Getting started on Docker
 
@@ -92,3 +108,4 @@ Flannel is under the Apache 2.0 license. See the [LICENSE][license] file for det
 [k3s-installer]: https://github.com/k3s-io/k3s/#quick-start---install-script
 [installing-with-kubeadm]: https://kubernetes.io/docs/getting-started-guides/kubeadm/
 [k3s]: https://k3s.io/
+[Network-plugins]: https://github.com/containernetworking/plugins

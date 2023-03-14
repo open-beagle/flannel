@@ -10,5 +10,6 @@ flannel.exe
 bash_unit
 dist/qemu-*
 .vscode/*
-
-vendor/
+vendor/*
+e2e/scratch/*
+e2e/kube-flannel.yml

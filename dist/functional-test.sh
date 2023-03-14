@@ -54,8 +54,12 @@ setup() {
 }
 
 teardown() {
+    echo "dumping subnets in etcd"
+    docker run --rm -e ETCDCTL_API=3 -v "${PWD}/test:/certs" $ETCDCTL_IMG etcdctl --endpoints=$etcd_endpt --cacert=/certs/ca.pem --cert=/certs/client.pem --key=/certs/client-key.pem get --prefix /coreos.com/network/subnets 2>&1
     echo "########## logs for flannel-e2e-test-flannel1 container ##########" 2>&1
     docker logs flannel-e2e-test-flannel1
+    echo "########## logs for flannel-e2e-test-flannel2 container ##########" 2>&1
+    docker logs flannel-e2e-test-flannel2
     docker rm -f flannel-e2e-test-flannel1 flannel-e2e-test-flannel2 flannel-e2e-test-flannel1-iperf flannel-host1 flannel-host2 > /dev/null 2>&1
     docker run --rm -e ETCDCTL_API=3 -v "${PWD}/test:/certs" $ETCDCTL_IMG etcdctl --endpoints=$etcd_endpt --cacert=/certs/ca.pem --cert=/certs/client.pem --key=/certs/client-key.pem del /coreos.com/network/config > /dev/null 2>&1
 }
@@ -141,41 +145,8 @@ pings() {
     assert "docker exec --privileged flannel-e2e-test-flannel2 /bin/ping -I $ping_dest2 -c 3 $ping_dest1" "Host 2 cannot ping host 1"
 }
 
-# These perf tests don't actually assert on anything
-test_hostgw_perf() {
-    write_config_etcd host-gw
-    create_ping_dest
-    perf
-}
-
-test_vxlan_perf() {
-    write_config_etcd vxlan
-    create_ping_dest
-    perf
-}
-
-if [[ ${ARCH} == "amd64" ]]; then
-test_udp_perf() {
-    write_config_etcd udp
-    create_ping_dest
-    perf
-}
-fi
-
-test_ipip_perf() {
-    write_config_etcd ipip
-    create_ping_dest
-    perf
-}
-
 test_ipsec_perf() {
     write_config_etcd ipsec
-    create_ping_dest
-    perf
-}
-
-test_wireguard_perf() {
-    write_config_etcd wireguard
     create_ping_dest
     perf
 }

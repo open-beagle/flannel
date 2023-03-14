@@ -4,6 +4,11 @@ Flannel may be paired with several different backends. Once set, the backend sho
 
 VXLAN is the recommended choice. host-gw is recommended for more experienced users who want the performance improvement and whose infrastructure support it (typically it can't be used in cloud environments). UDP is suggested for debugging only or for very old kernels that don't support VXLAN.
 
+In case `firewalld` is enabled on the node the port used by the backend needs to be enabled with `firewall-cmd`:
+```
+firewall-cmd --permanent --zone=public --add-port=[port]/udp
+```
+
 For more information on configuration options for Tencent see [TencentCloud VPC Backend for Flannel][tencentcloud-vpc]
 
 ## Recommended backends
@@ -18,6 +23,7 @@ Type and options:
 * `Port` (number): UDP port to use for sending encapsulated packets. On Linux, defaults to kernel default, currently 8472, but on Windows, must be 4789.
 * `GBP` (Boolean): Enable [VXLAN Group Based Policy](https://github.com/torvalds/linux/commit/3511494ce2f3d3b77544c79b87511a4ddb61dc89).  Defaults to `false`. GBP is not supported on Windows
 * `DirectRouting` (Boolean): Enable direct routes (like `host-gw`) when the hosts are on the same subnet. VXLAN will only be used to encapsulate packets to hosts on different subnets. Defaults to `false`. DirectRouting is not supported on Windows.
+* `MTU` (number): Desired MTU for the outgoing packets if not defined the MTU of the external interface is used.
 * `MacPrefix` (String): Only use on Windows, set to the MAC prefix. Defaults to `0E-2A`.
 
 ### host-gw
@@ -38,6 +44,7 @@ Type:
 * `PSK` (string): Optional. The pre shared key to use. Use `wg genpsk` to generate a key.
 * `ListenPort` (int): Optional. The udp port to listen on. Default is `51820`.
 * `ListenPortV6` (int): Optional. The udp port to listen on for ipv6. Default is `51821`.
+* `MTU` (number): Desired MTU for the outgoing packets if not defined the MTU of the external interface is used.
 * `Mode` (string): Optional.
     * separate - Use separate wireguard tunnels for ipv4 and ipv6 (default)
     * auto - Single wireguard tunnel for both address families; autodetermine the preferred peer address
