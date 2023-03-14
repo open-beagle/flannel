@@ -16,3 +16,8 @@ export GOARCH=ppc64le
 export CC=powerpc64le-linux-gnu-gcc
 make -e dist/flanneld
 mv dist/flanneld dist/flanneld-linux-$GOARCH
+
+export GOARCH=mips64le 
+export CC=mips64el-linux-gnuabi64-gcc
+make -e dist/flanneld
+mv dist/flanneld dist/flanneld-linux-$GOARCH
